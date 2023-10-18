@@ -16,40 +16,51 @@
 </div>
 
 
-@if(@weatherData != null)
+@if (@weatherDataList != null || @weatherDataList.Count()>0)
 {
-    <div class="text-center">
-        <p class="display-5">@hiria</p>
-        <p class="display-1">@weatherData.current.temperature_2m ºC</p>
-        <p class="display-6">@WeatherCode.Convert(weatherData.current.weathercode)</p>
-    </div>
 
-    <div class="card-group">
-        @for(int i=0;i< @weatherData.daily.time.Length;i++){
-            <WeatherApp.Components.WeatherCard
-                Day = "@weatherData.daily.time[i]"
-                MinWeatherData = "@weatherData.daily.apparent_temperature_min[i]"
-                MaxWeatherData = "@weatherData.daily.apparent_temperature_max[i]"
-            />
-        }
-    </div>
+    for (int j = 0; j < hiriData.results.Count(); j++)
+    {
+        <div class="text-center">
+            <p class="display-5">@hiriData.results[j].city</p>
+            <p>@hiriData.results[j].city, @hiriData.results[j].county, @hiriData.results[j].country</p>
+            <p class="display-1">@weatherDataList[j].current.temperature_2m ºC</p>
+            <p class="display-6">@WeatherCode.Convert(weatherDataList[j].current.weathercode)</p>
+        </div>
+
+        <div class="card-group">
+            @for (int i = 0; i < @weatherDataList[j].daily.time.Length; i++)
+            {
+                <WeatherApp.Components.WeatherCard Day="@weatherDataList[j].daily.time[i]"
+                                                   MinWeatherData="@weatherDataList[j].daily.apparent_temperature_min[i]"
+                                                   MaxWeatherData="@weatherDataList[j].daily.apparent_temperature_max[i]" />
+            }
+        </div>
+    }
 }
 
 
 @code {
     string hiria = "";
+    string probintzia = "";
+    string herrialde = "";
     string lat = "";
     string lon = "";
-    WeatherModel weatherData;
+    CityData hiriData;
+    List<WeatherModel> weatherDataList = new List<WeatherModel>();
     async Task GetWeather()
     {
-        var hiriData = await GetCityData();
-        lat = (hiriData.results[0].lat).ToString();
-        lon = (hiriData.results[0].lon).ToString();
+        hiriData = await GetCityData();
 
-        CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
-        weatherData = await Client.GetFromJsonAsync<WeatherModel>(Endpoints.GetWeatherEndPoint(hiriData.results[0].lat, hiriData.results[0].lon));
-        CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("es-es");
+        for(int i = 0; i < hiriData.results.Count(); i++)
+        {
+            lat = (hiriData.results[i].lat).ToString();
+            lon = (hiriData.results[i].lon).ToString();
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
+            WeatherModel weatherData = await Client.GetFromJsonAsync<WeatherModel>(Endpoints.GetWeatherEndPoint(hiriData.results[i].lat, hiriData.results[i].lon));
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("es-es");
+            weatherDataList.Add(weatherData);            
+        }
     }
 
     async Task<CityData> GetCityData()
