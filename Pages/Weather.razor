@@ -1,0 +1,60 @@
+﻿@page "/weather"
+@using System.Globalization;
+@using WeatherApp.Model
+@using WeatherApp.Components
+@using WeatherApp.Utilities
+@using WeatherApp.Models;
+@inject HttpClient Client
+
+<h3>Weather</h3>
+
+<div class="input-group mb-3 mt-3">
+    <input type="text" class="form-control" placeholder="Hiriaren izena" @bind=hiria />
+    <div class="input-group-append">
+        <button @onclick=GetWeather class="btn btn-outline-secondary" type="button">Bilatu</button>
+    </div>
+</div>
+
+
+@if(@weatherData != null)
+{
+    <div class="text-center">
+        <p class="display-5">@hiria</p>
+        <p class="display-1">@weatherData.current.temperature_2m ºC</p>
+        <p class="display-6">@WeatherCode.Convert(weatherData.current.weathercode)</p>
+    </div>
+
+    <div class="card-group">
+        @for(int i=0;i< @weatherData.daily.time.Length;i++){
+            <WeatherApp.Components.WeatherCard
+                Day = "@weatherData.daily.time[i]"
+                MinWeatherData = "@weatherData.daily.apparent_temperature_min[i]"
+                MaxWeatherData = "@weatherData.daily.apparent_temperature_max[i]"
+            />
+        }
+    </div>
+}
+
+
+@code {
+    string hiria = "";
+    string lat = "";
+    string lon = "";
+    WeatherModel weatherData;
+    async Task GetWeather()
+    {
+        var hiriData = await GetCityData();
+        lat = (hiriData.results[0].lat).ToString();
+        lon = (hiriData.results[0].lon).ToString();
+
+        CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
+        weatherData = await Client.GetFromJsonAsync<WeatherModel>(Endpoints.GetWeatherEndPoint(hiriData.results[0].lat, hiriData.results[0].lon));
+        CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("es-es");
+    }
+
+    async Task<CityData> GetCityData()
+    {
+        var hiriData = await Client.GetFromJsonAsync<CityData>(Endpoints.GetGeoApofiEndpoint(hiria));
+        return hiriData;
+    }
+}
